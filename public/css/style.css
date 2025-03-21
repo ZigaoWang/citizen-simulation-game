@@ -231,6 +231,14 @@ h2 {
   transform: translateY(-6px);
   box-shadow: 0 8px 20px rgba(74, 107, 223, 0.15);
   border-color: rgba(74, 107, 223, 0.2);
+  background-color: var(--primary-light);
+  color: white;
+}
+
+.theme-btn:hover .theme-name,
+.theme-btn:hover .theme-desc {
+  color: white;
+  opacity: 1;
 }
 
 .theme-btn.selected {

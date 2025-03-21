@@ -5,12 +5,12 @@ const router = express.Router();
 // 开始新游戏
 router.post('/start', async (req, res) => {
   try {
-    const { category } = req.body;
-    const scenario = await aiService.generateInitialScenario(category);
+    const { category, playerName } = req.body;
+    const scenario = await aiService.generateInitialScenario(category, playerName);
     res.json(scenario);
   } catch (error) {
-    console.error('游戏启动失败:', error);
-    res.status(500).json({ error: '游戏启动失败' });
+    console.error('开始游戏失败:', error);
+    res.status(500).json({ error: '服务器错误，请稍后再试' });
   }
 });
 
@@ -26,15 +26,20 @@ router.post('/action/stream', (req, res) => {
   }
 });
 
-// 处理玩家行动 - 传统方式 (备用)
+// 处理玩家行动
 router.post('/action', async (req, res) => {
   try {
-    const { action, context, history } = req.body;
-    const response = await aiService.processPlayerAction(action, context, history);
-    res.json(response);
+    const { currentScenario, action, playerName } = req.body;
+    
+    if (!currentScenario || !action) {
+      return res.status(400).json({ error: '请求缺少必要参数' });
+    }
+    
+    const result = await aiService.processAction(currentScenario, action, playerName);
+    res.json(result);
   } catch (error) {
     console.error('处理玩家行动失败:', error);
-    res.status(500).json({ error: '处理玩家行动失败' });
+    res.status(500).json({ error: '服务器错误，请稍后再试' });
   }
 });
 

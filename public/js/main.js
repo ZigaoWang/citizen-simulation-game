@@ -39,7 +39,8 @@ document.addEventListener('DOMContentLoaded', () => {
     score: 0,
     decisionsCount: 0,
     discoveredRights: new Set(),
-    discoveredDuties: new Set()
+    discoveredDuties: new Set(),
+    achievements: new Set()
   };
   
   // 音效
@@ -143,13 +144,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
   
-  // 添加知识点药丸
+  // 添加知识点药丸 - 增强版
   function addKnowledgePill(container, text) {
     if (!container) return;
-    
-    const pill = document.createElement('div');
-    pill.className = 'pill';
-    pill.textContent = text;
     
     // 检查是否已经存在相同的药丸
     const existingPills = container.querySelectorAll('.pill');
@@ -157,16 +154,56 @@ document.addEventListener('DOMContentLoaded', () => {
       if (existingPill.textContent === text) {
         // 已存在，添加突出动画后返回
         existingPill.classList.add('highlight');
-        setTimeout(() => existingPill.classList.remove('highlight'), 1500);
+        
+        // 添加闪光效果
+        const flashEffect = document.createElement('div');
+        flashEffect.className = 'pill-flash';
+        existingPill.appendChild(flashEffect);
+        
+        // 播放特效音效
+        playSound(audioEffects.successSound);
+        
+        // 显示发现提示
+        showToast(`再次发现: ${text}!`, 'info');
+        
+        setTimeout(() => {
+          existingPill.classList.remove('highlight');
+          if (flashEffect && flashEffect.parentNode) {
+            flashEffect.parentNode.removeChild(flashEffect);
+          }
+        }, 1500);
         return;
       }
     }
+    
+    // 为不同类型的知识点添加不同的图标
+    let icon = '';
+    let pillClass = 'pill';
+    
+    if (container === rightsContainer) {
+      icon = '🔮'; // 权利图标
+      pillClass += ' right-pill';
+      // 更新发现计数
+      gameState.discoveredRights.add(text);
+    } else if (container === dutiesContainer) {
+      icon = '📜'; // 义务图标
+      pillClass += ' duty-pill';
+      // 更新发现计数
+      gameState.discoveredDuties.add(text);
+    }
+    
+    // 创建药丸元素
+    const pill = document.createElement('div');
+    pill.className = pillClass;
+    pill.innerHTML = `<span class="pill-icon">${icon}</span><span class="pill-text">${text}</span>`;
     
     // 添加点击事件以显示详细信息
     pill.addEventListener('click', () => {
       // 显示详细知识点弹窗
       showKnowledgePopup(text);
-      pill.classList.toggle('active');
+      // 添加点击效果
+      pill.classList.add('pulse');
+      setTimeout(() => pill.classList.remove('pulse'), 500);
     });
     
     // 添加并应用动画效果
@@ -174,17 +211,112 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => {
       pill.style.opacity = '1';
       pill.style.transform = 'translateY(0)';
+      
+      // 播放获得音效
       playSound(audioEffects.successSound);
+      
+      // 显示发现提示
+      showToast(`新发现: ${text}!`, 'success');
+      
+      // 添加特殊效果 - 星星动画
+      createStarEffect(pill);
+      
+      // 更新收集进度提示
+      updateCollectionProgress();
     }, 10);
+  }
+  
+  // 添加Toast提示功能
+  function showToast(message, type = 'info') {
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.textContent = message;
     
-    // 如果是权利，更新已发现的权利集合
-    if (container === rightsContainer) {
-      gameState.discoveredRights.add(text);
-    } 
-    // 如果是义务，更新已发现的义务集合
-    else if (container === dutiesContainer) {
-      gameState.discoveredDuties.add(text);
+    document.body.appendChild(toast);
+    
+    // 显示动画
+    setTimeout(() => toast.classList.add('show'), 10);
+    
+    // 自动隐藏
+    setTimeout(() => {
+      toast.classList.remove('show');
+      setTimeout(() => {
+        if (toast.parentNode) {
+          toast.parentNode.removeChild(toast);
+        }
+      }, 300);
+    }, 3000);
+  }
+  
+  // 创建星星特效
+  function createStarEffect(element) {
+    for (let i = 0; i < 5; i++) {
+      const star = document.createElement('div');
+      star.className = 'star-effect';
+      star.style.left = `${Math.random() * 100}%`;
+      star.style.top = `${Math.random() * 100}%`;
+      star.style.animationDelay = `${Math.random() * 0.5}s`;
+      
+      element.appendChild(star);
+      
+      // 动画结束后移除
+      setTimeout(() => {
+        if (star.parentNode) {
+          star.parentNode.removeChild(star);
+        }
+      }, 1000);
     }
+  }
+  
+  // 更新收集进度
+  function updateCollectionProgress() {
+    const rightCount = gameState.discoveredRights.size;
+    const dutyCount = gameState.discoveredDuties.size;
+    const totalCount = rightCount + dutyCount;
+    
+    // 显示收集成就
+    if (totalCount === 3 && !gameState.achievements.has('beginner_collector')) {
+      gameState.achievements.add('beginner_collector');
+      showAchievement('初级收藏家', '发现3个知识点');
+    } else if (totalCount === 6 && !gameState.achievements.has('advanced_collector')) {
+      gameState.achievements.add('advanced_collector');
+      showAchievement('高级收藏家', '发现6个知识点');
+    } else if (totalCount === 9 && !gameState.achievements.has('master_collector')) {
+      gameState.achievements.add('master_collector');
+      showAchievement('收藏大师', '发现9个知识点');
+    }
+  }
+  
+  // 显示成就通知
+  function showAchievement(title, description) {
+    const achievement = document.createElement('div');
+    achievement.className = 'achievement';
+    achievement.innerHTML = `
+      <div class="achievement-icon">🏆</div>
+      <div class="achievement-content">
+        <h4>解锁成就</h4>
+        <h3>${title}</h3>
+        <p>${description}</p>
+      </div>
+    `;
+    
+    document.body.appendChild(achievement);
+    
+    // 播放成就音效
+    playSound(audioEffects.successSound);
+    
+    // 显示动画
+    setTimeout(() => achievement.classList.add('show'), 10);
+    
+    // 自动隐藏
+    setTimeout(() => {
+      achievement.classList.remove('show');
+      setTimeout(() => {
+        if (achievement.parentNode) {
+          achievement.parentNode.removeChild(achievement);
+        }
+      }, 500);
+    }, 5000);
   }
   
   // 显示知识点弹窗
@@ -292,7 +424,8 @@ document.addEventListener('DOMContentLoaded', () => {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          category: gameState.selectedTheme
+          category: gameState.selectedTheme,
+          playerName: gameState.playerName
         })
       });
       
@@ -350,7 +483,8 @@ document.addEventListener('DOMContentLoaded', () => {
         body: JSON.stringify({
           action: playerAction,
           context: gameState.currentContext,
-          history: gameState.actionHistory
+          history: gameState.actionHistory,
+          playerName: gameState.playerName
         })
       });
       
@@ -440,7 +574,7 @@ document.addEventListener('DOMContentLoaded', () => {
                   result: completeJSON
                 });
                 
-                gameState.currentContext = completeJSON.updatedContext || completeJSON;
+                gameState.currentContext = completeJSON;
                 
                 // 更新游戏分数
                 updateScore(completeJSON.evaluation);
@@ -471,7 +605,7 @@ document.addEventListener('DOMContentLoaded', () => {
                   result: completeJSON
                 });
                 
-                gameState.currentContext = completeJSON.updatedContext || completeJSON;
+                gameState.currentContext = completeJSON;
                 
                 // 更新游戏分数
                 updateScore(completeJSON.evaluation);
@@ -504,7 +638,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         result: parsedData
                       });
                       
-                      gameState.currentContext = parsedData.updatedContext || parsedData;
+                      gameState.currentContext = parsedData;
                       
                       // 更新游戏分数
                       updateScore(parsedData.evaluation);
@@ -542,20 +676,20 @@ document.addEventListener('DOMContentLoaded', () => {
           duties: []
         };
         
+        // 尝试从文本中提取信息
         if (sentences.length >= 2) {
           constructedResponse.feedback = sentences[0] + '.';
-          constructedResponse.scenario = sentences[1] + '.';
-        } else if (sentences.length === 1) {
-          constructedResponse.feedback = sentences[0] + '.';
+          constructedResponse.scenario = sentences.slice(1).join('. ') + '.';
         }
+        
+        // 设置为当前上下文
+        gameState.currentContext = constructedResponse;
         
         // 更新游戏状态
         gameState.actionHistory.push({
           action: playerAction,
           result: constructedResponse
         });
-        
-        gameState.currentContext = constructedResponse;
         
         // 更新游戏分数
         updateScore(constructedResponse.evaluation);
