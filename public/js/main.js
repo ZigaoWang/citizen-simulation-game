@@ -28,6 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const endingReflection = document.getElementById('ending-reflection');
   const newGameButton = document.getElementById('new-game-btn');
   const shareButton = document.getElementById('share-btn');
+  const restartGameButton = document.getElementById('restart-game-btn');
   
   // 游戏状态
   const gameState = {
@@ -579,6 +580,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 // 更新游戏分数
                 updateScore(completeJSON.evaluation);
                 
+                // 保存游戏进度
+                saveGameState();
+                
                 // 显示完整反馈
                 showFeedback(completeJSON);
               }
@@ -609,6 +613,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 // 更新游戏分数
                 updateScore(completeJSON.evaluation);
+                
+                // 保存游戏进度
+                saveGameState();
                 
                 // 显示完整反馈
                 showFeedback(completeJSON);
@@ -642,6 +649,9 @@ document.addEventListener('DOMContentLoaded', () => {
                       
                       // 更新游戏分数
                       updateScore(parsedData.evaluation);
+                      
+                      // 保存游戏进度
+                      saveGameState();
                       
                       // 显示完整反馈
                       feedbackContainer.classList.remove('streaming');
@@ -694,6 +704,9 @@ document.addEventListener('DOMContentLoaded', () => {
         // 更新游戏分数
         updateScore(constructedResponse.evaluation);
         
+        // 保存游戏进度
+        saveGameState();
+        
         // 显示构建的反馈
         feedbackContainer.classList.remove('streaming');
         showFeedback(constructedResponse);
@@ -726,6 +739,9 @@ document.addEventListener('DOMContentLoaded', () => {
         // 更新游戏分数
         updateScore(basicResponse.evaluation);
         
+        // 保存游戏进度
+        saveGameState();
+        
         // 显示构建的反馈
         feedbackContainer.classList.remove('streaming');
         showFeedback(basicResponse);
@@ -757,6 +773,9 @@ document.addEventListener('DOMContentLoaded', () => {
       
       // 更新游戏分数
       updateScore(errorResponse.evaluation);
+      
+      // 保存游戏进度
+      saveGameState();
       
       // 显示错误反馈
       feedbackContainer.classList.remove('streaming');
@@ -924,16 +943,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // 新游戏按钮事件
   newGameButton.addEventListener('click', () => {
     // 重置游戏状态
-    gameState.actionHistory = [];
-    gameState.currentContext = null;
-    gameState.score = 0;
-    gameState.decisionsCount = 0;
-    gameState.discoveredRights = new Set();
-    gameState.discoveredDuties = new Set();
-    
-    // 清空知识药丸容器
-    rightsContainer.innerHTML = '';
-    dutiesContainer.innerHTML = '';
+    resetGameState();
     
     // 返回欢迎屏幕
     showScreen(welcomeScreen);
@@ -1000,42 +1010,42 @@ document.addEventListener('DOMContentLoaded', () => {
     feedbackContainer.classList.remove('visible');
     feedbackContainer.classList.add('hidden');
     
-    // 确保分数显示存在
-    if (!document.getElementById('player-score')) {
-      createScoreElement();
+    // 清空输入框
+    playerActionInput.value = '';
+    submitActionButton.disabled = true;
+    
+    // 焦点到输入框
+    playerActionInput.focus();
+    
+    // 更新或创建分数显示
+    let scoreElement = document.getElementById('player-score');
+    if (!scoreElement) {
+      scoreElement = createScoreElement();
+    } else {
+      scoreElement.textContent = `得分: ${gameState.score}`;
     }
+    
+    // 保存游戏进度
+    saveGameState();
   }
   
   // 显示结局
   function showEnding(data) {
-    // 设置结局标题
-    endingTitle.textContent = data.endingTitle || '冒险结束';
+    // 设置结局屏幕内容
+    endingTitle.textContent = `${gameState.playerName}的公民责任之旅`;
     
-    // 创建结局描述文本
-    const endingDescription = document.createElement('p');
-    endingDescription.className = 'ending-description';
-    endingDescription.textContent = data.endingDescription || data.feedback || '你的冒险结束了。';
+    const totalDecisions = gameState.decisionsCount || gameState.actionHistory.length;
+    const scoreText = gameState.score >= 70 ? '优秀' : gameState.score >= 50 ? '良好' : '有待提高';
     
-    // 清空并添加新内容
-    endingText.innerHTML = '';
-    endingText.appendChild(endingDescription);
-    
-    // 添加统计信息
-    const statsElement = document.createElement('div');
-    statsElement.className = 'ending-stats';
-    statsElement.innerHTML = `
-      <h4>冒险统计</h4>
-      <ul>
-        <li>决策次数: <span>${gameState.decisionsCount}</span></li>
-        <li>最终得分: <span>${gameState.score}</span></li>
-        <li>发现的权利: <span>${gameState.discoveredRights.size}</span></li>
-        <li>认识的义务: <span>${gameState.discoveredDuties.size}</span></li>
-      </ul>
+    endingText.innerHTML = `
+      <p>你经历了<strong>${totalDecisions}个</strong>决策点</p>
+      <p>发现了<strong>${gameState.discoveredRights.size}项</strong>权利和<strong>${gameState.discoveredDuties.size}项</strong>义务</p>
+      <p>你的公民责任评分：<span class="highlight">${gameState.score}分</span> (${scoreText})</p>
+      ${data.ending || ''}
     `;
-    endingText.appendChild(statsElement);
     
-    // 设置反思文本
-    endingReflection.textContent = data.endingReflection || data.knowledge || '每个决定都体现了你对公民责任的理解，希望这次体验能帮助你更好地认识自己的权利和义务。';
+    // 设置反思内容
+    endingReflection.textContent = data.reflection || '作为公民，我们每个人都肩负着权利和义务。我们的选择不仅影响自己，也影响他人和整个社会。';
     
     // 显示结局屏幕
     showScreen(endingScreen);
@@ -1058,7 +1068,144 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
       playSound(audioEffects.failureSound);
     }
+    
+    // 清除保存的游戏进度，因为游戏已结束
+    clearSavedGame();
   }
+  
+  // 保存游戏进度
+  function saveGameState() {
+    try {
+      // 需要将Set转换为数组才能正确序列化
+      const saveState = {
+        ...gameState,
+        discoveredRights: Array.from(gameState.discoveredRights),
+        discoveredDuties: Array.from(gameState.discoveredDuties),
+        achievements: Array.from(gameState.achievements)
+      };
+      localStorage.setItem('citizenGame_saveState', JSON.stringify(saveState));
+      console.log('游戏进度已保存');
+    } catch (error) {
+      console.warn('保存游戏进度失败:', error);
+    }
+  }
+  
+  // 加载游戏进度
+  function loadGameState() {
+    try {
+      const savedStateJSON = localStorage.getItem('citizenGame_saveState');
+      if (savedStateJSON) {
+        const savedState = JSON.parse(savedStateJSON);
+        
+        // 恢复游戏状态
+        gameState.playerName = savedState.playerName || '';
+        gameState.selectedTheme = savedState.selectedTheme || '';
+        gameState.currentScenario = savedState.currentScenario || '';
+        gameState.actionHistory = savedState.actionHistory || [];
+        gameState.currentContext = savedState.currentContext || null;
+        gameState.score = savedState.score || 0;
+        gameState.decisionsCount = savedState.decisionsCount || 0;
+        
+        // 恢复Set类型的数据
+        gameState.discoveredRights = new Set(savedState.discoveredRights || []);
+        gameState.discoveredDuties = new Set(savedState.discoveredDuties || []);
+        gameState.achievements = new Set(savedState.achievements || []);
+        
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.warn('加载游戏进度失败:', error);
+      return false;
+    }
+  }
+  
+  // 清除保存的游戏进度
+  function clearSavedGame() {
+    try {
+      localStorage.removeItem('citizenGame_saveState');
+      console.log('游戏进度已清除');
+    } catch (error) {
+      console.warn('清除游戏进度失败:', error);
+    }
+  }
+  
+  // 重置游戏状态
+  function resetGameState() {
+    // 清除游戏状态
+    gameState.playerName = '';
+    gameState.selectedTheme = '';
+    gameState.currentScenario = '';
+    gameState.actionHistory = [];
+    gameState.currentContext = null;
+    gameState.score = 0;
+    gameState.decisionsCount = 0;
+    gameState.discoveredRights = new Set();
+    gameState.discoveredDuties = new Set();
+    gameState.achievements = new Set();
+    
+    // 清除UI
+    rightsContainer.innerHTML = '';
+    dutiesContainer.innerHTML = '';
+    
+    // 移除分数显示
+    const scoreElement = document.getElementById('player-score');
+    if (scoreElement) {
+      scoreElement.remove();
+    }
+    
+    // 清除保存的游戏
+    clearSavedGame();
+    
+    // 返回欢迎界面
+    showScreen(welcomeScreen);
+    
+    // 重置主题选择
+    themeButtons.forEach(button => {
+      button.classList.remove('selected');
+    });
+    startButton.disabled = true;
+    
+    // 重置输入框
+    playerNameInput.value = '';
+  }
+  
+  // 重开人生按钮事件
+  restartGameButton.addEventListener('click', () => {
+    // 显示确认对话框
+    const confirmRestart = confirm('在现实生活中，我们无法重新开始人生...\n\n确定要重新开始游戏吗？');
+    
+    if (confirmRestart) {
+      resetGameState();
+    }
+  });
+  
+  // 初始化时检查是否有保存的游戏
+  window.addEventListener('load', () => {
+    if (loadGameState() && gameState.currentContext) {
+      // 如果有保存的游戏，直接恢复
+      console.log('加载已保存的游戏进度');
+      
+      // 重建UI元素
+      if (gameState.discoveredRights.size > 0) {
+        gameState.discoveredRights.forEach(right => {
+          addKnowledgePill(rightsContainer, right);
+        });
+      }
+      
+      if (gameState.discoveredDuties.size > 0) {
+        gameState.discoveredDuties.forEach(duty => {
+          addKnowledgePill(dutiesContainer, duty);
+        });
+      }
+      
+      // 更新游戏屏幕
+      updateGameScreen(gameState.currentContext);
+      
+      // 显示游戏屏幕
+      showScreen(gameScreen);
+    }
+  });
   
   // 初始化加载音效
   loadSounds();
