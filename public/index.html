@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="公民责任模拟器 - 一个关于公民权利与义务的互动体验">
+  <title>公民责任模拟器</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚖️</text></svg>">
+</head>
+<body>
+  <!-- 加载界面 -->
+  <div id="loading-screen">
+    <div class="loader"></div>
+    <p>思考中<span class="dot-animation">...</span></p>
+  </div>
+  
+  <!-- 游戏容器 -->
+  <div class="game-container">
+    <!-- 欢迎屏幕 -->
+    <div id="welcome-screen" class="screen active">
+      <div class="title-container">
+        <h1>公民责任<span class="highlight">模拟器</span></h1>
+        <p class="subtitle">你的选择，你的责任</p>
+      </div>
+      
+      <div class="theme-selection">
+        <h2>选择主题</h2>
+        <div class="theme-buttons">
+          <button class="theme-btn" data-theme="ENVIRONMENTAL" aria-label="选择环保行动主题">
+            <span class="emoji">🌱</span>
+            <span class="theme-name">环保行动</span>
+            <span class="theme-desc">探索环境保护责任与权利</span>
+          </button>
+          <button class="theme-btn" data-theme="FREE_SPEECH" aria-label="选择言论自由主题">
+            <span class="emoji">💬</span>
+            <span class="theme-name">言论自由</span>
+            <span class="theme-desc">了解表达权利的边界</span>
+          </button>
+          <button class="theme-btn" data-theme="LEGAL_DUTY" aria-label="选择法律责任主题">
+            <span class="emoji">⚖️</span>
+            <span class="theme-name">法律责任</span>
+            <span class="theme-desc">面对道德与法律的抉择</span>
+          </button>
+        </div>
+        
+        <div class="start-area">
+          <div class="input-wrapper">
+            <input type="text" id="player-name" placeholder="输入你的名字（可选）" maxlength="20" aria-label="输入你的名字">
+            <label for="player-name" class="floating-label">你的名字</label>
+          </div>
+          <button id="start-game-btn" disabled>
+            <span>开始冒险</span>
+            <svg class="btn-arrow" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+              <polyline points="12 5 19 12 12 19"></polyline>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 游戏屏幕 -->
+    <div id="game-screen" class="screen">
+      <div class="game-header">
+        <div id="knowledge-pills">
+          <div class="pill-group">
+            <h3>权利</h3>
+            <div id="rights-container" class="pills"></div>
+          </div>
+          <div class="pill-group">
+            <h3>义务</h3>
+            <div id="duties-container" class="pills"></div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="narrative-container">
+        <div class="scenario-card">
+          <div id="scenario-text" class="story-text"></div>
+        </div>
+        
+        <div class="input-area">
+          <div class="input-label">我要...</div>
+          <div class="input-container">
+            <div class="input-wrapper">
+              <input id="player-action" type="text" placeholder="输入你的行动（例如：报警、收集证据、与朋友商量...）" aria-label="输入你的行动" autofocus>
+            </div>
+            <button id="submit-action" aria-label="确认行动">
+              <span>确认</span>
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="9 18 15 12 9 6"></polyline>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      <div id="feedback-container" class="feedback-container hidden">
+        <div class="feedback-header">
+          <span id="evaluation-badge" class="badge"></span>
+          <h3>结果</h3>
+          <button class="close-feedback" id="close-feedback-btn" aria-label="关闭反馈">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+        <p id="feedback-text"></p>
+        <div class="knowledge-box">
+          <h4>知识点</h4>
+          <p id="knowledge-text"></p>
+        </div>
+        <button id="continue-btn">
+          <span>继续</span>
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="9 18 15 12 9 6"></polyline>
+          </svg>
+        </button>
+      </div>
+    </div>
+    
+    <!-- 结局屏幕 -->
+    <div id="ending-screen" class="screen">
+      <div class="ending-content">
+        <h2 id="ending-title"></h2>
+        <div id="ending-text"></div>
+        
+        <div class="ending-knowledge">
+          <h3>公民责任反思</h3>
+          <p id="ending-reflection"></p>
+        </div>
+        
+        <div class="ending-actions">
+          <button id="new-game-btn">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+              <path d="M3 3v5h5"></path>
+            </svg>
+            <span>新的冒险</span>
+          </button>
+          <button id="share-btn">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path>
+              <polyline points="16 6 12 2 8 6"></polyline>
+              <line x1="12" y1="2" x2="12" y2="15"></line>
+            </svg>
+            <span>分享结果</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <script src="js/main.js"></script>
+</body>
+</html>
