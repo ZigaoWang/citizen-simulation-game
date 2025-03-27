@@ -44,50 +44,6 @@ document.addEventListener('DOMContentLoaded', () => {
     achievements: new Set()
   };
   
-  // 音效
-  const audioEffects = {
-    clickSound: null,
-    successSound: null, 
-    failureSound: null,
-    neutralSound: null,
-    typingSound: null,
-    backgroundSound: null
-  };
-  
-  // 尝试加载音效
-  function loadSounds() {
-    try {
-      audioEffects.clickSound = new Audio('/sound/click.mp3');
-      audioEffects.successSound = new Audio('/sound/success.mp3');
-      audioEffects.failureSound = new Audio('/sound/failure.mp3');
-      audioEffects.neutralSound = new Audio('/sound/neutral.mp3');
-      audioEffects.typingSound = new Audio('/sound/typing.mp3');
-      audioEffects.backgroundSound = new Audio('/sound/background.mp3');
-      
-      // 设置背景音乐循环播放
-      if (audioEffects.backgroundSound) {
-        audioEffects.backgroundSound.loop = true;
-        audioEffects.backgroundSound.volume = 0.2;
-      }
-    } catch (error) {
-      console.warn('加载音效失败:', error);
-    }
-  }
-  
-  // 尝试播放音效
-  function playSound(sound) {
-    try {
-      if (sound && typeof sound.play === 'function') {
-        sound.currentTime = 0;
-        sound.play().catch(e => {
-          // 忽略播放错误，不影响游戏体验
-        });
-      }
-    } catch (error) {
-      // 忽略错误
-    }
-  }
-  
   // 显示加载中
   function showLoading() {
     loadingScreen.classList.add('active');
@@ -104,9 +60,6 @@ document.addEventListener('DOMContentLoaded', () => {
     welcomeScreen.classList.remove('active');
     gameScreen.classList.remove('active');
     endingScreen.classList.remove('active');
-    
-    // 播放过渡音效
-    playSound(audioEffects.clickSound);
     
     // 在短暂延迟后显示新屏幕，以实现过渡效果
     setTimeout(() => {
@@ -130,11 +83,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (i < text.length) {
           element.textContent += text.charAt(i);
           i++;
-          
-          // 间歇性播放打字音效
-          if (i % 3 === 0) {
-            playSound(audioEffects.typingSound);
-          }
         } else {
           clearInterval(intervalId);
           resolve();
@@ -160,9 +108,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const flashEffect = document.createElement('div');
         flashEffect.className = 'pill-flash';
         existingPill.appendChild(flashEffect);
-        
-        // 播放特效音效
-        playSound(audioEffects.successSound);
         
         // 显示发现提示
         showToast(`再次发现: ${text}!`, 'info');
@@ -212,9 +157,6 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => {
       pill.style.opacity = '1';
       pill.style.transform = 'translateY(0)';
-      
-      // 播放获得音效
-      playSound(audioEffects.successSound);
       
       // 显示发现提示
       showToast(`新发现: ${text}!`, 'success');
@@ -303,9 +245,6 @@ document.addEventListener('DOMContentLoaded', () => {
     
     document.body.appendChild(achievement);
     
-    // 播放成就音效
-    playSound(audioEffects.successSound);
-    
     // 显示动画
     setTimeout(() => achievement.classList.add('show'), 10);
     
@@ -391,9 +330,6 @@ document.addEventListener('DOMContentLoaded', () => {
       gameState.selectedTheme = button.dataset.theme;
       startButton.disabled = false;
       
-      // 播放选择音效
-      playSound(audioEffects.clickSound);
-      
       // 添加按钮选择动画
       button.animate([
         { transform: 'scale(0.95)' },
@@ -410,13 +346,6 @@ document.addEventListener('DOMContentLoaded', () => {
   startButton.addEventListener('click', async () => {
     gameState.playerName = playerNameInput.value.trim() || '游客';
     showLoading();
-    
-    // 开始播放背景音乐
-    if (audioEffects.backgroundSound) {
-      audioEffects.backgroundSound.play().catch(e => {
-        // 忽略自动播放限制错误
-      });
-    }
     
     try {
       const response = await fetch('/api/start', {
@@ -529,11 +458,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 // 滚动到最新内容
                 feedbackContainer.scrollTop = feedbackContainer.scrollHeight;
-                
-                // 间歇性播放打字音效
-                if (Math.random() > 0.7) {
-                  playSound(audioEffects.typingSound);
-                }
               } 
               // 处理完整的JSON响应
               else if (parsedData.feedback && parsedData.scenario) {
@@ -801,15 +725,12 @@ document.addEventListener('DOMContentLoaded', () => {
     switch(evaluation) {
       case 'POSITIVE':
         gameState.score += 10;
-        playSound(audioEffects.successSound);
         break;
       case 'NEGATIVE':
         gameState.score -= 5;
-        playSound(audioEffects.failureSound);
         break;
       case 'NEUTRAL':
         gameState.score += 3;
-        playSound(audioEffects.neutralSound);
         break;
     }
     
@@ -1050,23 +971,16 @@ document.addEventListener('DOMContentLoaded', () => {
     // 显示结局屏幕
     showScreen(endingScreen);
     
-    // 停止背景音乐
-    if (audioEffects.backgroundSound) {
-      try {
-        audioEffects.backgroundSound.pause();
-        audioEffects.backgroundSound.currentTime = 0;
-      } catch (e) {
-        // 忽略错误
-      }
-    }
-    
     // 根据得分播放不同音效
-    if (gameState.score >= 50) {
-      playSound(audioEffects.successSound);
-    } else if (gameState.score >= 20) {
-      playSound(audioEffects.neutralSound);
+    if (data.score >= 70) {
+      evaluationBadge.textContent = '优秀公民';
+      evaluationBadge.className = 'badge positive';
+    } else if (data.score >= 40) {
+      evaluationBadge.textContent = '尽责公民';
+      evaluationBadge.className = 'badge neutral';
     } else {
-      playSound(audioEffects.failureSound);
+      evaluationBadge.textContent = '需要提高';
+      evaluationBadge.className = 'badge negative';
     }
     
     // 清除保存的游戏进度，因为游戏已结束
@@ -1206,10 +1120,4 @@ document.addEventListener('DOMContentLoaded', () => {
       showScreen(gameScreen);
     }
   });
-  
-  // 初始化加载音效
-  loadSounds();
-  
-  // 初始化时禁用开始按钮，直到选择主题
-  startButton.disabled = true;
 });
